@@ -4,7 +4,7 @@ import socket
 RECEIVER_IP = '10.0.0.211'
 # RECEIVER_IP = socket.gethostbyname(socket.gethostname())
 RECEIVER_PORT = 1024
-TEST_MESSAGES = [1, 2, 3, 4, 5, 6]
+TEST_MESSAGES = [1, 2, 3, 4, 5]
 
 
 def start_server():
@@ -16,7 +16,7 @@ def start_server():
 
     # Send data to the server
     message = "Hello, from Project Sender!"
-    conn.sendall(message.encode('utf-8'))
+    conn.send(message.encode('utf-8'))
 
     # Receive a response from the server
     data = conn.recv(1024).decode('utf-8')
@@ -28,14 +28,16 @@ def start_server():
 
 
 def send_packets(conn):
+    PACKET_INDEX = 1
     for packet in TEST_MESSAGES:
-        conn.sendall(packet.encode('utf-8'))
+        conn.send(f"{PACKET_INDEX}:{packet}".encode('utf-8'))
+        PACKET_INDEX += 1
 
 
 if __name__ == "__main__":
     is_success, socket_conn = start_server()
     if is_success:
         send_packets(socket_conn)
-        socket_conn.sendall('TERMINATE'.encode('utf-8'))
+        socket_conn.send('T'.encode('utf-8'))
         socket_conn.close()
     # socket_conn.close()
