@@ -1,9 +1,10 @@
 import socket
 
 # RECEIVER_IP = '10.250.96.7'
-RECEIVER_IP = socket.gethostbyname(socket.gethostname())
+RECEIVER_IP = '10.0.0.211'
+# RECEIVER_IP = socket.gethostbyname(socket.gethostname())
 RECEIVER_PORT = 1024
-TEST_MESSAGES = [1, 2, 3, 4, 5, 6, -1]
+TEST_MESSAGES = [1, 2, 3, 4, 5, 6]
 
 
 def start_server():
@@ -35,4 +36,6 @@ if __name__ == "__main__":
     is_success, socket_conn = start_server()
     if is_success:
         send_packets(socket_conn)
+        socket_conn.sendall('TERMINATE'.encode('utf-8'))
         socket_conn.close()
+    # socket_conn.close()

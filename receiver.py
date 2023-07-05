@@ -33,4 +33,16 @@ def start_server():
 
 
 if __name__ == "__main__":
+    accept_messages = True
+    received_messages = {}
     is_success, socket_conn = start_server()
+    while accept_messages:
+        data = socket_conn.recv(1024).decode('utf-8')
+        if data and data.startswith('TERMINATE'):
+            accept_messages = False
+        elif data:
+            churn = data.split(':')
+            seq_num, message = churn[0], churn[1]
+            received_messages[seq_num] = message
+    print(received_messages)
+    socket_conn.close()
