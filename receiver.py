@@ -32,14 +32,14 @@ def start_server():
         return True, client_socket
     return False, None
 
-def receive_messages(is_success, socket_conn):
+def receive_messages(socket_conn):
     accept_messages_flag = True
     received_messages = {}
     while accept_messages_flag:
         data = socket_conn.recv(4).decode('utf-8')
         data = data.strip()
         print(data.strip())
-        if data and data.startswith('T'):
+        if data and data.find('T') > -1:
             accept_messages_flag = False
             print('got terminate msg')
             socket_conn.close()
@@ -48,10 +48,11 @@ def receive_messages(is_success, socket_conn):
             seq_num, message = churn[0], churn[1]
             received_messages[seq_num] = message
     print(received_messages)
-    # socket_conn.close()
+    socket_conn.close()
 
 
 if __name__ == "__main__":
-    is_success, socket_conn = start_server()
-    receive_messages(is_success, socket_conn)
+    connection_established, socket_conn = start_server()
+    if connection_established:
+        receive_messages(socket_conn)
     
