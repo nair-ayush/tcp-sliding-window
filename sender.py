@@ -36,14 +36,6 @@ def simulate_packet_loss():
         return True
     return False
 
-# Function to simulate packet corruption
-
-
-def simulate_packet_corruption():
-    if random.randint(0, 9) < 2:
-        return True
-    return False
-
 
 window_size = 3
 
@@ -79,11 +71,6 @@ def send_data(conn, data):
         # Simulate packet loss
         if simulate_packet_loss():
             print("Packet loss: ", base)
-            continue
-
-        # Simulate packet corruption
-        if simulate_packet_corruption():
-            print("Packet corruption: ", base)
             continue
 
         time.sleep(0.5)  # Simulate network delay
