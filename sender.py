@@ -1,91 +1,73 @@
 import random
 import socket
 import time
+import lib.commonLib as lib
 
 # RECEIVER_IP = '10.250.96.7'
 RECEIVER_IP = '10.0.0.211'
-# RECEIVER_IP = socket.gethostbyname(socket.gethostname())
 RECEIVER_PORT = 1024
+WINDOW_SIZE = 3
 # TEST_MESSAGES = list(range(1, 10000000))
 TEST_MESSAGES = [314, 23, 44, 24.5, 5245, 2, 3, 423, 4234, 242, 34232]
-
-
-def start_server():
-    # Creates a socket object using the socket module
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # Attempts to connect to the server
-    conn.connect((RECEIVER_IP, RECEIVER_PORT))
-
-    # Send data to the server
-    message = "Hello, from Project Sender!"
-    conn.send(message.encode('utf-8'))
-
-    # Receive a response from the server
-    data = conn.recv(1024).decode('utf-8')
-    print("Received data from receiver:", data)
-
-    if data == "Hello, sender! Successfully received message":
-        return True, conn
-    return False, None
-
-
-# Function to simulate packet loss
-def simulate_packet_loss():
-    if random.randint(0, 9) < 3:
-        return True
-    return False
-
-
-window_size = 3
 
 # Function to send data using the selective repeat protocol
 
 
 def send_data(conn, data):
+    """
+    SELECTIVE REPEAT -- SEQUENCE NUMBER IS TWICE AS BIG AS WINDOW SIZE
+    WINDOW_SIZE = 3
+    SEQ_NUM = 6
+    """
     base = 0  # Sequence number of the oldest unacknowledged packet
     next_seq_num = 0  # Sequence number of the next packet to be sent
-    window = []  # Sliding window to hold the unacknowledged packets
+    # Sliding window to hold the unacknowledged packets
+    window = [-1] * WINDOW_SIZE
+    max_seq_num = 2 * WINDOW_SIZE
 
     while base < len(data):
         # Send packets up to the window size
-        while next_seq_num < base + window_size and next_seq_num < len(data):
-            packet = str(next_seq_num) + ":" + str(data[next_seq_num]) + "\\"
+        while next_seq_num < base + WINDOW_SIZE and next_seq_num < len(data):
+            curr_seq_num = (base + next_seq_num) % max_seq_num
+            window[next_seq_num] = curr_seq_num
+            packet = f"{curr_seq_num}\\"
             conn.send(packet.encode())
-            window.append(next_seq_num)
             next_seq_num += 1
+
         # Receive acknowledgments
-        while True:
-            try:
-                ack, _ = conn.recvfrom(1024)
-                ack = int(ack.decode())
-                print("ACK: ", ack)
-                if ack in window:
-                    window.remove(ack)
-                    base = ack + 1
-                if len(window) == 0:
-                    break
-            except socket.timeout:
+        start_time = time.time()
+        while sum(window) != -1 * WINDOW_SIZE:
+            ack_message, _ = conn.recvfrom(1024)
+            acks = lib.getStrippedPacket(ack_message.decode())
+            for ack in acks:
+                if len(ack):
+                    print(f"ACK: {ack}")
+                    if window[int(ack)] != -1:
+                        window[int(ack)] = -1
+                    else:
+                        pass  # simulating acknowlegdement ignore
+            if time.time() - start_time >= 5:  # wait 5 seconds and if all acks not received, then break
                 break
 
         # Simulate packet loss
-        if simulate_packet_loss():
-            print("Packet loss: ", base)
-            continue
+        # if lib.simulate_packet_loss():
+        #     print("Packet loss: ", base)
+        #     continue
 
-        time.sleep(0.5)  # Simulate network delay
+        # time.sleep(0.5)  # Simulate network delay # REDUCE LATER TO 0.1
 
         # Retransmit lost or corrupted packets
-        for packet_seq_num in window:
-            packet = str(packet_seq_num) + ":" + data[packet_seq_num]
-            conn.send(packet.encode())
+        # for packet_seq_num in window:
+        #     packet = str(packet_seq_num) + ":" + data[packet_seq_num]
+        #     conn.send(packet.encode())
 
     # Send the end-of-transmission packet
     conn.send("EOT".encode())
 
 
 if __name__ == "__main__":
-    is_success, socket_conn = start_server()
+    is_success, socket_conn = lib.sender_start_server(
+        RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE)
     if is_success:
         send_data(socket_conn, data=TEST_MESSAGES)
         # socket_conn.send('T'.encode('utf-8'))

@@ -2,7 +2,6 @@ import random
 import socket
 
 
-
 def receiver_start_server(RECEIVER_IP, RECEIVER_PORT):
     # Create a TCP socket
     receiver_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,10 +33,32 @@ def receiver_start_server(RECEIVER_IP, RECEIVER_PORT):
     return False, None
 
 
+def sender_start_server(RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE):
+    # Creates a socket object using the socket module
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Attempts to connect to the server
+    conn.connect((RECEIVER_IP, RECEIVER_PORT))
+
+    # Send data to the server
+    message = f"Hello, from Project Sender! Initial window size is {WINDOW_SIZE}"
+    conn.send(message.encode('utf-8'))
+
+    # Receive a response from the server
+    data = conn.recv(1024).decode('utf-8')
+    print("Received data from receiver:", data)
+
+    if data == "Hello, sender! Successfully received message":
+        return True, conn
+    return False, None
+
+
 def getStrippedPacket(packet):
     return packet.strip().split('\\')
 
 # Function to simulate packet loss
+
+
 def simulate_packet_loss():
     if random.randint(0, 9) < 3:
         return True
