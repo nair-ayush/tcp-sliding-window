@@ -2,15 +2,10 @@ import lib.commonLib as lib
 
 RECEIVER_IP = '10.0.0.211'
 RECEIVER_PORT = 1024
-
-
-WINDOW_SIZE = 3
-MAX_SEQ_NUM = 2*WINDOW_SIZE
-window = [-1]*WINDOW_SIZE
 EOT = False
 
-
-def receive_data(socket_conn):
+def receive_data(socket_conn, initialWindowSize):
+    window = [-1]*initialWindowSize
 
     while not EOT:
         packet = socket_conn.recv(1024)
@@ -18,7 +13,7 @@ def receive_data(socket_conn):
 
         print("receiving test packet ", packet)
         if packet == "EOT":
-            break
+            EOT = True
 
         message = lib.getStrippedPacket(packet)
         print('message ', message)
@@ -37,15 +32,11 @@ def receive_data(socket_conn):
         for index,ack in enumerate(window):
             if ack!= -1:
                 print('sending ',ack)
-                window[index] = -1
+                window[index] = -1 #mark packet as ACK sent
                 socket_conn.send(f'{ack}\\'.encode())
-        
-
-
 
 if __name__ == "__main__":
-    connection_established, socket_conn = lib.receiver_start_server(RECEIVER_IP, RECEIVER_PORT)
+    connection_established, socket_conn, initialWindowSize = lib.receiver_start_server(RECEIVER_IP, RECEIVER_PORT)
     if connection_established:
-        # receive_messages(socket_conn)
-        receive_data(socket_conn)
+        receive_data(socket_conn, initialWindowSize)
     
