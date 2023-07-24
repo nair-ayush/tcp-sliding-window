@@ -1,50 +1,46 @@
-import random
 import socket
-import time
 import lib.commonLib as lib
 
 # RECEIVER_IP = '10.250.96.7'
 RECEIVER_IP = '10.0.0.211'
 RECEIVER_PORT = 1024
 WINDOW_SIZE = 4
-TEST_MESSAGES = list(range(1, 17))
-# TEST_MESSAGES = [314, 23, 44, 24, 5245, 2, 3, 423, 4234, 242, 342,]
+TEST_MESSAGES = list(range(1, 100000))
 
 # Function to send data using the selective repeat protocol
 
 
 def send_data(conn, window_size, data):
-    """
-    SELECTIVE REPEAT -- SEQUENCE NUMBER IS TWICE AS BIG AS WINDOW SIZE
-    WINDOW_SIZE = 3
-    SEQ_NUM = 6
-    """
-    base = 0  # Sequence number of the oldest unacknowledged packet
-    next_seq_num = 0  # Sequence number of the next packet to be sent
+    base = 0  # Sequence number of the latest unacknowledged packet
+    next_seq_num = 0  # window packet tracker
     initial_window_expansion = True
     while base < len(data):
+        print("\n")
         print("Current window size", window_size)
-        print("Current starting base", base)
-
-        max_seq_num = 2 * window_size
+        print("Progress ", f"{base} / {len(data)}",
+              " -- ", f"{base / len(data) * 100} %")
+        # window initialized to -1 and set to seq_num when corresponding packet sent
         window = [-1] * window_size
         curr_seq_num = 0
-        # Send packets up to the window size
+        next_seq_num = base
+
+        # Send packets up to the window size and check for overflow beyond data length
+        # next_seq_num tracks index in data items as window slides over
+        # curr_seq_num tracks window seq_num
         while next_seq_num < base + window_size and next_seq_num < len(data):
-            print("window is -> ", window)
-            # curr_seq_num = (base + next_seq_num) % max_seq_num
-            # print("next_seq_num= ", next_seq_num,
-            #       " curr_seq_num= ", curr_seq_num)
             window[curr_seq_num] = curr_seq_num
             packet = f"{curr_seq_num}\\"
             conn.send(packet.encode())
             curr_seq_num += 1
             next_seq_num += 1
+        # print("window after send -> ", window)
 
         # Receive acknowledgments
-        start_time = time.time()
         while sum(window) != -1 * window_size:
-            ack_message, _ = conn.recvfrom(1024)
+            try:
+                ack_message, _ = conn.recvfrom(1024)
+            except socket.timeout:
+                break
             acks = lib.getStrippedPacket(ack_message.decode())
             for ack in acks:
                 if len(ack):
@@ -53,50 +49,40 @@ def send_data(conn, window_size, data):
                         window[int(ack)] = -1
                     else:
                         pass  # simulating acknowlegdement ignore
-            if time.time() - start_time >= 5:  # wait 5 seconds and if all acks not received, then break
-                break
 
         if sum(window) == -1 * window_size:  # all packets ack'ed in window
             # print('iteration success')
             base += window_size
             if initial_window_expansion:
                 window_size *= 2
-                # print('initial expansion continues')
+                print('AIMD: initial exponent increase')
             else:
-                # print('additive increase')
+                print('AIMD: additive increase')
                 window_size += 1  # additive increase
         else:
-            # print('MD')
+            print('AIMD: window halved')
             # something was not ack'ed and requires retransmission
             fail_idx = 0
             for idx in range(len(window)-1, -1, -1):
                 if window[idx] > -1:
+                    # print("oldest unacknowledged packet ", idx)
                     fail_idx = idx
                     break
-            window_size = window_size // 2
+
+            window_size = window_size // 2 if window_size > 1 else 1
+
             base = base + fail_idx
-            next_seq_num = base
             initial_window_expansion = False
-
-        # Simulate packet loss
-        # if lib.simulate_packet_loss():
-        #     print("Packet loss: ", base)
-        #     continue
-
-        # time.sleep(0.5)  # Simulate network delay # REDUCE LATER TO 0.1
-
-        # Retransmit lost or corrupted packets
-        # for packet_seq_num in window:
-        #     packet = str(packet_seq_num) + ":" + data[packet_seq_num]
-        #     conn.send(packet.encode())
 
     # Send the end-of-transmission packet
     conn.send("EOT".encode())
+    print("\nEOT")
 
 
 if __name__ == "__main__":
     is_success, socket_conn = lib.sender_start_server(
         RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE)
     if is_success:
+        socket_conn.settimeout(1)
         send_data(socket_conn, WINDOW_SIZE, data=TEST_MESSAGES)
         socket_conn.close()
