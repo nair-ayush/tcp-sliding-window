@@ -1,25 +1,23 @@
 import lib.commonLib as lib
 
-RECEIVER_IP = '10.0.0.211'
-RECEIVER_PORT = 1024
-EOT = False
-
 def receive_data(socket_conn, initialWindowSize):
     window = [-1]*initialWindowSize
 
-    while not EOT:
+    while True:
         packet = socket_conn.recv(1024)
         packet = packet.decode()
 
         print("receiving test packet ", packet)
         if packet == "EOT":
-            EOT = True
+            break
+
 
         message = lib.getStrippedPacket(packet)
-        print('message ', message)
         
         for num in message: 
             if len(num):
+                if int(num) >= len(window):
+                    window.extend([-1]*len(window))
                 window[int(num)] = int(num)
 
         # Simulate packet loss
@@ -32,10 +30,12 @@ def receive_data(socket_conn, initialWindowSize):
         for index,ack in enumerate(window):
             if ack!= -1:
                 print('sending ',ack)
-                window[index] = -1 #mark packet as ACK sent
+                window[index] = -1 # mark packet as ACK sent
                 socket_conn.send(f'{ack}\\'.encode())
 
 if __name__ == "__main__":
+    RECEIVER_IP = '10.0.0.211'
+    RECEIVER_PORT = 1024
     connection_established, socket_conn, initialWindowSize = lib.receiver_start_server(RECEIVER_IP, RECEIVER_PORT)
     if connection_established:
         receive_data(socket_conn, initialWindowSize)
