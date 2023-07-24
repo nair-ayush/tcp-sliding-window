@@ -7,8 +7,9 @@ def receive_data(socket_conn, initialWindowSize):
         packet = socket_conn.recv(1024)
         packet = packet.decode()
 
-        print("receiving test packet ", packet)
+        # print("receiving packet --> ", packet)
         if packet == "EOT":
+            print("receiving packet --> ", packet)
             break
 
 
@@ -16,20 +17,22 @@ def receive_data(socket_conn, initialWindowSize):
         
         for num in message: 
             if len(num):
+
+                # Simulate packet loss
+                if lib.simulate_packet_loss():
+                    print("Packet loss: ", num)
+                    continue
+                
                 if int(num) >= len(window):
                     window.extend([-1]*len(window))
-                window[int(num)] = int(num)
+                window[int(num)] = int(num) # mark packet seq number as recieved to avoid unnecessary retransmission
 
-        # Simulate packet loss
-        # if lib.simulate_packet_loss():
-            # print("Packet loss: ", seq_num)
-            # continue
 
-        print('window = ', window)
+        # print('window = ', window)
         # Send acknowledgment
         for index,ack in enumerate(window):
             if ack!= -1:
-                print('sending ',ack)
+                # print('sending ack for -->',ack)
                 window[index] = -1 # mark packet as ACK sent
                 socket_conn.send(f'{ack}\\'.encode())
 

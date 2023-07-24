@@ -1,6 +1,8 @@
 import random
 import socket
 
+PACKET_LOSS_PROBABILITY = .001 # 1% chances of losing a packet during transmission
+
 
 def receiver_start_server(RECEIVER_IP, RECEIVER_PORT):
     # Create a TCP socket
@@ -55,10 +57,9 @@ def sender_start_server(RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE):
 def getStrippedPacket(packet):
     return packet.strip().split('\\')
 
+
 # Function to simulate packet loss
-
-
 def simulate_packet_loss():
-    if random.randint(0, 9) < 3:
+    if random.random() < PACKET_LOSS_PROBABILITY:
         return True
     return False
