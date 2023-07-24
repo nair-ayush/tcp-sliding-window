@@ -2,6 +2,7 @@ import random
 import socket
 
 
+
 def receiver_start_server(RECEIVER_IP, RECEIVER_PORT):
     # Create a TCP socket
     receiver_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,7 +22,6 @@ def receiver_start_server(RECEIVER_IP, RECEIVER_PORT):
     data = client_socket.recv(1024).decode('utf-8')
     print("Received data from sender:", data)
     WINDOW_SIZE = int(data[-1])
-    window = [-1]*WINDOW_SIZE
     print('initial window size sent from sender = ', WINDOW_SIZE)
 
     # Send a response back to the client -- handshake from receiver
@@ -30,35 +30,13 @@ def receiver_start_server(RECEIVER_IP, RECEIVER_PORT):
 
     if data.startswith("Hello, from Project Sender!"):
         return True, client_socket
-    return False, None
-
-
-def sender_start_server(RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE):
-    # Creates a socket object using the socket module
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # Attempts to connect to the server
-    conn.connect((RECEIVER_IP, RECEIVER_PORT))
-
-    # Send data to the server
-    message = f"Hello, from Project Sender! Initial window size is {WINDOW_SIZE}"
-    conn.send(message.encode('utf-8'))
-
-    # Receive a response from the server
-    data = conn.recv(1024).decode('utf-8')
-    print("Received data from receiver:", data)
-
-    if data == "Hello, sender! Successfully received message":
-        return True, conn
-    return False, None
+    return False, None, WINDOW_SIZE
 
 
 def getStrippedPacket(packet):
     return packet.strip().split('\\')
 
 # Function to simulate packet loss
-
-
 def simulate_packet_loss():
     if random.randint(0, 9) < 3:
         return True
