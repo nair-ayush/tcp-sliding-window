@@ -4,6 +4,7 @@ import lib.commonLib as lib
 # RECEIVER_IP = '10.250.96.7'
 RECEIVER_IP = '10.0.0.211'
 RECEIVER_PORT = 1024
+MAX_WINDOW_SIZE = 10**16
 WINDOW_SIZE = 4
 TEST_MESSAGES = list(range(1, 100000))
 
@@ -58,7 +59,7 @@ def send_data(conn, window_size, data):
                 print('AIMD: initial exponent increase')
             else:
                 print('AIMD: additive increase')
-                window_size += 1  # additive increase
+                window_size = min(window_size + 1, MAX_WINDOW_SIZE)  # additive increase
         else:
             print('AIMD: window halved')
             # something was not ack'ed and requires retransmission
