@@ -1,9 +1,14 @@
+"""
+AYUSH NAIR
+NITISH RANJAN
+"""
 import socket
 import lib.commonLib as lib
 
 # RECEIVER_IP = '10.250.96.7'
 RECEIVER_IP = '10.0.0.211'
 RECEIVER_PORT = 1024
+SOCKET_TIMEOUT_IN_SECONDS = 1
 MAX_WINDOW_SIZE = 2**16
 WINDOW_SIZE = 4
 TEST_MESSAGES = list(range(1, 100000))
@@ -19,7 +24,7 @@ def send_data(conn, window_size, data):
         print("\n")
         print("Current window size", window_size)
         print("Progress ", f"{base} / {len(data)}",
-              " -- ", f"{base / len(data) * 100} %")
+              " -- ", "{:.2f} %".format(base / len(data) * 100))
         # window initialized to -1 and set to seq_num when corresponding packet sent
         window = [-1] * window_size
         curr_seq_num = 0
@@ -28,6 +33,7 @@ def send_data(conn, window_size, data):
         # Send packets up to the window size and check for overflow beyond data length
         # next_seq_num tracks index in data items as window slides over
         # curr_seq_num tracks window seq_num
+        # packets sent are marked in window an non-negative value (seq num in this case) to denote that it has been sent
         while next_seq_num < base + window_size and next_seq_num < len(data):
             window[curr_seq_num] = curr_seq_num
             packet = f"{curr_seq_num}\\"
@@ -37,6 +43,7 @@ def send_data(conn, window_size, data):
         # print("window after send -> ", window)
 
         # Receive acknowledgments
+        # reset packets which have been ACK'ed to -1 in window
         while sum(window) != -1 * window_size:
             try:
                 ack_message, _ = conn.recvfrom(1024)
@@ -55,14 +62,16 @@ def send_data(conn, window_size, data):
             # print('iteration success')
             base += window_size
             if initial_window_expansion:
-                window_size = min(window_size*2 , MAX_WINDOW_SIZE)
+                window_size = min(window_size*2, MAX_WINDOW_SIZE)
                 print('AIMD: initial exponent increase')
             else:
                 print('AIMD: additive increase')
-                window_size = min(window_size + 1, MAX_WINDOW_SIZE)  # additive increase
+                # additive increase
+                window_size = min(window_size + 1, MAX_WINDOW_SIZE)
         else:
-            print('AIMD: window halved')
             # something was not ack'ed and requires retransmission
+            # i.e., there is atleast one value in window [] that is non-negative
+            print('AIMD: window halved')
             fail_idx = 0
             for idx in range(len(window)-1, -1, -1):
                 if window[idx] > -1:
@@ -70,20 +79,23 @@ def send_data(conn, window_size, data):
                     fail_idx = idx
                     break
 
+            # set base to oldest unacknowledged packet for retransmission in next iteration
+            # set window size to half
+            # stop exponential window size expansion
             window_size = window_size // 2 if window_size > 1 else 1
-
             base = base + fail_idx
             initial_window_expansion = False
 
     # Send the end-of-transmission packet
     conn.send("EOT".encode())
-    print("\nEOT")
+    print("\nEOT -- 100%")
 
 
 if __name__ == "__main__":
     is_success, socket_conn = lib.sender_start_server(
         RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE)
     if is_success:
-        socket_conn.settimeout(1)
+        # reducing default timeout value
+        socket_conn.settimeout(SOCKET_TIMEOUT_IN_SECONDS)
         send_data(socket_conn, WINDOW_SIZE, data=TEST_MESSAGES)
         socket_conn.close()
