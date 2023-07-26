@@ -30,8 +30,7 @@ def receive_data(socket_conn, initialWindowSize):
                     print("Packet loss: ", num)
                     continue
 
-                seqNumbersReceived.append(num, time.time())
-
+                seqNumbersReceived.append((num, time.time()))
                 
                 if int(num) >= len(window):
                     window.extend([-1]*len(window))
