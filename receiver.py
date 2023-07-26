@@ -4,6 +4,8 @@ NITISH RANJAN
 """
 import lib.commonLib as lib
 import time
+import os
+import csv
 
 seqNumbersReceived = []
 
@@ -52,3 +54,11 @@ if __name__ == "__main__":
     if connection_established:
         receive_data(socket_conn, initialWindowSize)
     
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "analysis", "sequence number received.csv"), "w") as wf:
+        writer = csv.writer(wf)
+        writer.writerow(["SEQUENCE_NUMBER", "TIMESTAMP"])
+        start_time = seqNumbersReceived[0][1]
+        for window in seqNumbersReceived:
+            a = list(window)
+            a[1] = a[1] - start_time
+            writer.writerow(a)
