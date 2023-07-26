@@ -115,11 +115,3 @@ if __name__ == "__main__":
                 a = list(window)
                 a[1] = a[1] - start_time
                 writer.writerow(a)
-
-        # with open(os.path.join(os.path.abspath(__file__), "outputs", "window_size.csv"), "w") as wf:
-        #     writer = csv.writer(wf)
-        #     writer.writerow(["WINDOW_SIZE", "TIMESTAMP"])
-        #     for window in WINDOW_SIZE_TRACK:
-        #         a = list(window)
-        #         a[1] = a[1] - start_time
-        #         writer.writerow(a)
