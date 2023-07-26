@@ -3,6 +3,9 @@ AYUSH NAIR
 NITISH RANJAN
 """
 import socket
+import time
+import os
+import csv
 import lib.commonLib as lib
 
 # RECEIVER_IP = '10.250.96.7'
@@ -11,7 +14,8 @@ RECEIVER_PORT = 1024
 SOCKET_TIMEOUT_IN_SECONDS = 1
 MAX_WINDOW_SIZE = 2**16
 WINDOW_SIZE = 4
-TEST_MESSAGES = list(range(1, 100000))
+TEST_MESSAGES = list(range(1, 200))
+WINDOW_SIZE_TRACK = []
 
 # Function to send data using the selective repeat protocol
 
@@ -20,6 +24,7 @@ def send_data(conn, window_size, data):
     base = 0  # Sequence number of the latest unacknowledged packet
     next_seq_num = 0  # window packet tracker
     initial_window_expansion = True
+    WINDOW_SIZE_TRACK.append((window_size, time.time()))
     while base < len(data):
         print("\n")
         print("Current window size", window_size)
@@ -85,6 +90,7 @@ def send_data(conn, window_size, data):
             window_size = window_size // 2 if window_size > 1 else 1
             base = base + fail_idx
             initial_window_expansion = False
+        WINDOW_SIZE_TRACK.append((window_size, time.time()))
 
     # Send the end-of-transmission packet
     conn.send("EOT".encode())
@@ -99,3 +105,21 @@ if __name__ == "__main__":
         socket_conn.settimeout(SOCKET_TIMEOUT_IN_SECONDS)
         send_data(socket_conn, WINDOW_SIZE, data=TEST_MESSAGES)
         socket_conn.close()
+        print("Writing churn to file")
+        start_time = WINDOW_SIZE_TRACK[0][1]
+
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "analysis", "window_size.csv"), "w") as wf:
+            writer = csv.writer(wf)
+            writer.writerow(["WINDOW_SIZE", "TIMESTAMP"])
+            for window in WINDOW_SIZE_TRACK:
+                a = list(window)
+                a[1] = a[1] - start_time
+                writer.writerow(a)
+
+        # with open(os.path.join(os.path.abspath(__file__), "outputs", "window_size.csv"), "w") as wf:
+        #     writer = csv.writer(wf)
+        #     writer.writerow(["WINDOW_SIZE", "TIMESTAMP"])
+        #     for window in WINDOW_SIZE_TRACK:
+        #         a = list(window)
+        #         a[1] = a[1] - start_time
+        #         writer.writerow(a)
