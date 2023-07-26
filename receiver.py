@@ -3,6 +3,9 @@ AYUSH NAIR
 NITISH RANJAN
 """
 import lib.commonLib as lib
+import time
+
+seqNumbersReceived = []
 
 def receive_data(socket_conn, initialWindowSize):
     window = [-1]*initialWindowSize
@@ -26,6 +29,9 @@ def receive_data(socket_conn, initialWindowSize):
                 if lib.simulate_packet_loss():
                     print("Packet loss: ", num)
                     continue
+
+                seqNumbersReceived.append(num, time.time())
+
                 
                 if int(num) >= len(window):
                     window.extend([-1]*len(window))
