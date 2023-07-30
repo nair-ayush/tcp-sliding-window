@@ -6,18 +6,41 @@ import socket
 import time
 import os
 import csv
-import lib.commonLib as lib
 
 # RECEIVER_IP = '10.250.96.7'
 RECEIVER_IP = '10.0.0.211'
 RECEIVER_PORT = 1024
 SOCKET_TIMEOUT_IN_SECONDS = 1
 MAX_WINDOW_SIZE = 2**16
-WINDOW_SIZE = 4
-TEST_MESSAGES = list(range(1, 200))
+WINDOW_SIZE = 128
+TEST_MESSAGES = list(range(1, 10001))
 WINDOW_SIZE_TRACK = []
 
 # Function to send data using the selective repeat protocol
+
+
+def sender_start_server(RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE):
+    # Creates a socket object using the socket module
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Attempts to connect to the server
+    conn.connect((RECEIVER_IP, RECEIVER_PORT))
+
+    # Send data to the server
+    message = f"Hello, from Project Sender! Initial window size is {WINDOW_SIZE}"
+    conn.send(message.encode('utf-8'))
+
+    # Receive a response from the server
+    data = conn.recv(1024).decode('utf-8')
+    print("Received data from receiver:", data)
+
+    if data == "Hello, sender! Successfully received message":
+        return True, conn
+    return False, None
+
+
+def getStrippedPacket(packet):
+    return packet.strip().split('\\')
 
 
 def send_data(conn, window_size, data):
@@ -54,7 +77,7 @@ def send_data(conn, window_size, data):
                 ack_message, _ = conn.recvfrom(1024)
             except socket.timeout:
                 break
-            acks = lib.getStrippedPacket(ack_message.decode())
+            acks = getStrippedPacket(ack_message.decode())
             for ack in acks:
                 if len(ack):
                     # print(f"ACK: {ack}")
@@ -98,7 +121,7 @@ def send_data(conn, window_size, data):
 
 
 if __name__ == "__main__":
-    is_success, socket_conn = lib.sender_start_server(
+    is_success, socket_conn = sender_start_server(
         RECEIVER_IP, RECEIVER_PORT, WINDOW_SIZE)
     if is_success:
         # reducing default timeout value
