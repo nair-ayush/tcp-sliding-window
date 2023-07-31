@@ -9,7 +9,7 @@ import socket
 import random
 
 GOOD_PUT_MOD = 1000 #calculate goodput every 1000 segments
-PACKET_LOSS_PROBABILITY = 0.00001 #0.001% chance of losing a packet during transmission
+PACKET_LOSS_PROBABILITY = 0.0001 #0.001% chance of losing a packet during transmission
 seqNumbersReceived = []
 seqNumbersDropped = []
 
@@ -31,7 +31,7 @@ def receiver_start_server(RECEIVER_IP, RECEIVER_PORT):
     # Receive data from the client
     data = client_socket.recv(1024).decode('utf-8')
     print("Received data from sender:", data)
-    WINDOW_SIZE = int(data[-1])
+    WINDOW_SIZE = int(data.split(" ")[-1])
     print('initial window size sent from sender = ', WINDOW_SIZE)
 
     # Send a response back to the client -- handshake from receiver
@@ -65,7 +65,7 @@ def receive_data(socket_conn, initialWindowSize):
             print("Received End of Transmission Message ")
             print('Total messages sent = ',totalMessagesSentCounter)
             print('Total messages received = ',totalMessagesReceivedCounter)
-            print('Average Goodput = ', '{:.2f}%'.format(sum(goodPutList)/len(goodPutList)))
+            print('Average Goodput = ', '{}%'.format(sum(goodPutList)/len(goodPutList)))
             return goodPutList
 
 
@@ -85,6 +85,7 @@ def receive_data(socket_conn, initialWindowSize):
                 # Simulate packet loss
                 if simulate_packet_loss():
                     seqNumbersDropped.append((num, time.time()))
+                    # print('packet loss  ---  ', num)
                     continue
 
                 #operations on packet received successfully start
@@ -94,7 +95,7 @@ def receive_data(socket_conn, initialWindowSize):
                 totalMessagesReceivedCounter += 1
                 
                 if int(num) >= len(window):
-                    window.extend([-1]*len(window))
+                    window.extend([-1]*int(num))
                 window[int(num)] = int(num) # mark packet seq number as recieved to avoid unnecessary retransmission
 
                 # operations on packet received successfully end
