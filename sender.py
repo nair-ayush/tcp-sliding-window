@@ -12,8 +12,8 @@ RECEIVER_IP = '10.0.0.211'
 RECEIVER_PORT = 1024
 SOCKET_TIMEOUT_IN_SECONDS = 1
 MAX_WINDOW_SIZE = 2**16
-WINDOW_SIZE = 128
-TEST_MESSAGES = list(range(1, 10001))
+WINDOW_SIZE = 1
+TEST_MESSAGES = list(range(1, 10**7 + 1))
 WINDOW_SIZE_TRACK = []
 
 # Function to send data using the selective repeat protocol
@@ -81,7 +81,7 @@ def send_data(conn, window_size, data):
             for ack in acks:
                 if len(ack):
                     # print(f"ACK: {ack}")
-                    if window[int(ack)] != -1:
+                    if int(ack) < len(window) and window[int(ack)] != -1:
                         window[int(ack)] = -1
                     else:
                         pass  # simulating acknowlegdement ignore
@@ -128,9 +128,8 @@ if __name__ == "__main__":
         socket_conn.settimeout(SOCKET_TIMEOUT_IN_SECONDS)
         send_data(socket_conn, WINDOW_SIZE, data=TEST_MESSAGES)
         socket_conn.close()
-        print("Writing churn to file")
         start_time = WINDOW_SIZE_TRACK[0][1]
-
+        print("Writing churn to file")
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "analysis", "window_size.csv"), "w") as wf:
             writer = csv.writer(wf)
             writer.writerow(["WINDOW_SIZE", "TIMESTAMP"])
@@ -138,3 +137,5 @@ if __name__ == "__main__":
                 a = list(window)
                 a[1] = a[1] - start_time
                 writer.writerow(a)
+        print(f"Total Execution Time = {time.time() - start_time} seconds")
+        print("__________________")
